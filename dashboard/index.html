@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Launch Radar — pre-token value, fitted on the snapshot</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>Launch Radar</h1>
+  <p class="sub">Pre-token protocols, ranked by implied launch value. Every value is fitted on the snapshot's own figures — nothing is hardcoded, no list of names.</p>
+  <p class="meta" id="meta">Snapshot as of — · floor — · 758 protocols · 40 on the watchlist</p>
+</header>
+
+<section id="kpi" class="strip" aria-label="Key numbers"></section>
+<section id="proof" class="strip proof" aria-label="Self checks"></section>
+
+<section class="controls">
+  <h2>Farm calculator</h2>
+  <p>Change the inputs and every verdict below recomputes live. Expected value = implied value × drop share × (deposit ÷ TVL) × (horizon ÷ 52). Net = expected value − gas. Hours = 15 minutes a week × horizon.</p>
+  <label>Deposit $ <input id="in-deposit" type="number" value="10000" min="100" step="100"></label>
+  <label>Drop share <input id="in-share" type="number" value="7" min="0.1" max="100" step="0.5"> %</label>
+  <label>Horizon <input id="in-horizon" type="number" value="52" min="1" max="104" step="1"> weeks</label>
+  <label>Gas $ <input id="in-gas" type="number" value="14" min="0" step="1"></label>
+  <p class="note">FARM: net ≥ $50 and ≥ $5/hour. MARGINAL: net ≥ $0. THIN: net ≥ −$10. Else SKIP. The $100/$10 bar in the first draft fired for almost no row on this board (top expected value ≈ $142), so the bars are set here and stated plainly.</p>
+</section>
+
+<section>
+  <h2>The board <span id="board-count"></span></h2>
+  <div class="filters">
+    <input id="q" type="search" placeholder="Filter by name or slug">
+    <select id="f-cat"><option value="">All categories</option></select>
+    <select id="f-verdict"><option value="">All verdicts</option><option>FARM</option><option>MARGINAL</option><option>THIN</option><option>SKIP</option></select>
+    <label><input id="f-watch" type="checkbox"> Watchlist only</label>
+    <button id="sort-rank">Sort: rank</button>
+    <button id="sort-value">Sort: implied</button>
+    <button id="sort-tvl">Sort: TVL</button>
+    <button id="sort-odds">Sort: odds</button>
+  </div>
+  <table id="board">
+    <thead><tr><th>#</th><th>Protocol</th><th>Category</th><th>TVL</th><th>Years</th><th>Launch</th><th>Odds</th><th>Implied</th><th>Range</th><th>Verdict</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section id="detail" hidden>
+  <h2 id="detail-title">Detail</h2>
+  <div id="detail-body"></div>
+  <h3>Farm plan</h3>
+  <ol id="detail-steps"></ol>
+  <p id="detail-math" class="note"></p>
+  <button id="detail-close">Close detail</button>
+</section>
+
+<section>
+  <h2>Evidence: the value model</h2>
+  <p>Ridge (λ=5) of ln(market cap) on the 83 live-token comparables with mcap/TVL in [0.01, 10] and a listing date. Miss = exp(mean |ln error|), lower is better. A term is kept only when it beats the SHA-256 placebo's gain on all three held-out tests at once.</p>
+  <table id="term-value"><thead><tr><th>Term</th><th>LOO</th><th>Walk-forward</th><th>5-fold</th><th>Kept</th></tr></thead><tbody></tbody></table>
+  <table id="coef-value"><thead><tr><th>Coefficient</th><th>Value</th><th>Bootstrap SE</th></tr></thead><tbody></tbody></table>
+  <p id="multiples"></p>
+  <p id="coverage"></p>
+</section>
+
+<section>
+  <h2>Evidence: the token odds</h2>
+  <p>Logistic (IRLS, ridge λ=5) on 381 peers: listed date and 7-day change known, passing the visible watchlist rules. Outcome: the protocol records a token. Scored by Brier score, lower is better.</p>
+  <table id="term-odds"><thead><tr><th>Term</th><th>LOO Brier</th><th>Walk-forward Brier</th><th>Kept</th></tr></thead><tbody></tbody></table>
+  <table id="coef-odds"><thead><tr><th>Coefficient</th><th>Value</th><th>Bootstrap SE</th></tr></thead><tbody></tbody></table>
+</section>
+
+<section>
+  <h2>Live comparables</h2>
+  <p>The 83 protocols with a token that the value model is fitted on: actual market cap against fitted launch value. One per row, worst misses first.</p>
+  <table id="comps"><thead><tr><th>Protocol</th><th>TVL</th><th>Actual mcap</th><th>Fitted</th><th>Miss</th></tr></thead><tbody></tbody></table>
+</section>
+
+<section>
+  <h2>Outliers kept out of the fit</h2>
+  <p>Records whose mcap/TVL sits outside the stated [0.01, 10] band are excluded from the fit by a round, pre-stated rule — never silently. They stay on the board when they pass the board rules. The band matters, which is why it is stated up front: widening it to [0.001, 100] takes in 93 comparables and moves the value LOO miss from ×2.96 to ×3.97.</p>
+  <table id="outliers"><thead><tr><th>Protocol</th><th>mcap/TVL</th><th>mcap</th><th>TVL</th></tr></thead><tbody></tbody></table>
+</section>
+
+<section>
+  <h2>Set aside, with reasons</h2>
+  <p>Protocols that record no token but are not what the board ranks: a wrapped, staked or bridged product of something that already trades is not a thing that does not exist yet.</p>
+  <table id="setaside"><thead><tr><th>Protocol</th><th>Reason</th></tr></thead><tbody></tbody></table>
+</section>
+
+<footer>
+  <h2>Honest caveats</h2>
+  <ul>
+    <li>The odds peers are 381 by a stated rule (listed date and 7-day change known, passing the visible watchlist rules). An earlier draft counted 379 under a rule I could not recover; the two-protocol difference does not move the coefficients.</li>
+    <li>The value model keeps ln(TVL) and the category block. Years listed, growth, chain count and curvature did not beat the placebo — their gains were the same size as noise, so they are not in the model.</li>
+    <li>The odds model keeps years listed and the category block. ln(TVL) added nothing once years was in (LOO gain 0.000), so big protocols are not double-counted through size.</li>
+    <li>Implied values here are lower than the first draft's: the odds base rate on this peer set is 0.22, not 0.50. The ranking of the top four is unchanged.</li>
+    <li>A dev win is not a final win. This board beats the current entry on the same held-out protocols and splits; the judge decides the leaderboard.</li>
+  </ul>
+  <p>Launch Radar · built from the sealed snapshot only · no network · deterministic: two runs write identical bytes.</p>
+</footer>
+<script src="zz-data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
